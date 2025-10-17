@@ -1,11 +1,11 @@
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useState, useTransition } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
-import FormItem from "../FormItem";
 import {
   LoginSchema,
   type LoginSchemaType,
-} from "../interfaces/login.interface";
+} from "../../interfaces/login.interface";
+import FormItem from "../FormItem";
 const LoginForm = () => {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | undefined>();

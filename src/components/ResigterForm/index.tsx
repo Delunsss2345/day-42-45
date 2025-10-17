@@ -1,11 +1,11 @@
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useState, useTransition } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
-import FormItem from "../FormItem";
 import {
   RegisterSchema,
   type RegisterSchemaType,
-} from "../interfaces/register.interface"; // 👉 import schema đăng ký
+} from "../../interfaces/register.interface"; // 👉 import schema đăng ký
+import FormItem from "../FormItem";
 
 const RegisterForm = () => {
   const [isPending, startTransition] = useTransition();
