@@ -1,16 +1,26 @@
+import { useFetchFormCurrentUser } from "@/pages/Auth/hooks/useFetchFormCurrentUser";
+import * as authService from "@/services/auth";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { useState, useTransition } from "react";
+import { useEffect } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import {
   RegisterSchema,
   type RegisterSchemaType,
-} from "../../interfaces/register.interface"; // 👉 import schema đăng ký
+} from "../../interfaces/register.interface";
 import FormItem from "../FormItem";
-
 const RegisterForm = () => {
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | undefined>();
-  const [success, setSuccess] = useState<string | undefined>();
+  const {
+    dispatch,
+    navigate,
+    params,
+    loading,
+    setLoading,
+    error,
+    setError,
+    success,
+    setSuccess,
+    currentUser,
+  } = useFetchFormCurrentUser();
 
   const {
     register,
@@ -20,11 +30,32 @@ const RegisterForm = () => {
     resolver: yupResolver(RegisterSchema),
     mode: "onChange",
   });
+  useEffect(() => {
+    if (currentUser) {
+      const continuePath = params.get("continue") || "/";
+      navigate(continuePath, { replace: true });
+    }
+  }, [currentUser, navigate, params]);
 
-  const onSubmit: SubmitHandler<RegisterSchemaType> = (data) => {
-    setError("");
-    setSuccess("");
-    console.log(data);
+  const onSubmit: SubmitHandler<RegisterSchemaType> = async (data) => {
+    setLoading(true);
+    setError(undefined);
+    setSuccess(undefined);
+    try {
+      const { access_token, refresh_token } = await authService.register(data);
+
+      localStorage.setItem("accessToken", access_token);
+      localStorage.setItem("refreshToken", refresh_token);
+      setSuccess("Đăng ký thành công");
+      dispatch(authService.getCurrentUser());
+      console.log(currentUser);
+    } catch (error: any) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        console.log("Lỗi không xác định");
+      }
+    }
   };
 
   return (
@@ -67,10 +98,11 @@ const RegisterForm = () => {
 
       <button
         type="submit"
-        disabled={isPending}
-        className="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-70 disabled:cursor-not-allowed"
+        disabled={loading}
+        className={`w-full bg-blue-600 text-white font-semibold py-2 rounded-lg transition
+    ${loading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700"}`}
       >
-        Đăng ký
+        {loading ? "Đang đăng ký..." : "Đăng ký"}
       </button>
 
       {error && <p className="text-rose-500 text-sm">{error}</p>}

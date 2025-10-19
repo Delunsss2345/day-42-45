@@ -1,15 +1,28 @@
+import * as authService from "@/services/auth";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { useState, useTransition } from "react";
+import { useEffect } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import {
   LoginSchema,
   type LoginSchemaType,
 } from "../../interfaces/login.interface";
+
+import { useFetchFormCurrentUser } from "@/pages/Auth/hooks/useFetchFormCurrentUser";
 import FormItem from "../FormItem";
 const LoginForm = () => {
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | undefined>();
-  const [success, setSuccess] = useState<string | undefined>();
+  const {
+    dispatch,
+    navigate,
+    params,
+    loading,
+    setLoading,
+    error,
+    setError,
+    success,
+    setSuccess,
+    currentUser,
+  } = useFetchFormCurrentUser();
+
   const {
     register,
     handleSubmit,
@@ -18,9 +31,34 @@ const LoginForm = () => {
     resolver: yupResolver(LoginSchema),
   });
 
-  const onSubmit: SubmitHandler<LoginSchemaType> = (data) => {
-    setError("");
-    console.log(data);
+  useEffect(() => {
+    if (currentUser) {
+      const continuePath = params.get("continue") || "/";
+      navigate(continuePath, { replace: true });
+    }
+  }, [currentUser, navigate, params]);
+
+  const onSubmit: SubmitHandler<LoginSchemaType> = async (data) => {
+    setLoading(true);
+    setError(undefined);
+    setSuccess(undefined);
+
+    try {
+      const { access_token, refresh_token } = await authService.login(data);
+
+      localStorage.setItem("accessToken", access_token);
+      localStorage.setItem("refreshToken", refresh_token);
+      setSuccess("Đăng nhập thành công!");
+      dispatch(authService.getCurrentUser());
+    } catch (error: any) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        console.log("Lỗi không xác định");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -44,10 +82,14 @@ const LoginForm = () => {
 
       <button
         type="submit"
-        className="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition"
+        disabled={loading}
+        className={`w-full bg-blue-600 text-white font-semibold py-2 rounded-lg transition
+    ${loading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700"}`}
       >
-        Đăng nhập
+        {loading ? "Đang đăng nhập..." : "Đăng nhập"}
       </button>
+      {error && <p className="text-rose-500 text-sm">{error}</p>}
+      {success && <p className="text-green-600 text-sm">{success}</p>}
     </form>
   );
 };

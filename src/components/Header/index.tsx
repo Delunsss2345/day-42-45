@@ -1,4 +1,8 @@
-import { Link, NavLink } from "react-router";
+import { setCurrentUser } from "@/features/auth";
+import { useCurrentUser } from "@/features/auth/hook";
+import * as authService from "@/services/auth";
+import { useDispatch } from "react-redux";
+import { Link, NavLink, useNavigate } from "react-router";
 
 const navLinks = [
   { path: "/", label: "Home" },
@@ -7,6 +11,21 @@ const navLinks = [
 ];
 
 const Header = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const currentUser = useCurrentUser();
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+    } finally {
+      localStorage.clear();
+      dispatch(setCurrentUser(null));
+      navigate("/auth");
+    }
+  };
+
   return (
     <header className="bg-white shadow-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -21,14 +40,22 @@ const Header = () => {
                   to={link.path}
                   className={({ isActive }) =>
                     `text-gray-600 hover:text-blue-500 ${
-                      isActive ? "font-bold text-blue-600" : ""
-                    }`
+                      currentUser && link.path === "/auth"
+                        ? "hidden"
+                        : "visible"
+                    } ${isActive ? "font-bold text-blue-600" : ""}`
                   }
                 >
                   {link.label}
                 </NavLink>
               </li>
             ))}
+            {currentUser && (
+              <div>
+                <p>{currentUser?.email}</p>
+                <button onClick={handleLogout}>Logout</button>
+              </div>
+            )}
           </ul>
         </nav>
       </div>
